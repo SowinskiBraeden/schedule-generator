@@ -1,6 +1,6 @@
 # Schedule Generator
 
-Hello there! This is the standalone repository for the schedule generator from my [school-management-api project](https://github.com/SowinskiBraeden/school-management-api)
+Hello there! This is the standalone repository for the schedule generator from my [school-management-api](https://github.com/SowinskiBraeden/school-management-api) project.
 The algorithms have been moved out of `tinker.py` into their own python  
 script from version 1 to 3. These are in the `/scheduleGenerator` folder. I suggest to look  
 at the latest work in `generator_v3.py` where the algorithm has come a long way. Using real 2018 course  
