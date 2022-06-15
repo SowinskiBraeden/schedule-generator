@@ -4,8 +4,6 @@ import math
 import random
 from inspect import currentframe
 
-from click import pass_context
-
 # Import from custom utilities
 from util.mockStudents import getSampleStudents
 from util.generateCourses import getSampleCourses
@@ -291,12 +289,13 @@ def generateScheduleV3(
     # Tally first and second semester
     sem1, sem2 = 0, 0
     sem1List, sem2List = {}, {}
-    for i in range(1, 6):
-      sem1 += len(running[f"block{i}"])
-      sem1List[f"block{i}"] = running[f"block{i}"]
-    for i in range(5, 11):
-      sem2 += len(running[f"block{i}"])
-      sem2List[f"block{i}"] = running[f"block{i}"]
+    for i in range(1, 11):
+      if i <= 5:
+        sem1 += len(running[f"block{i}"])
+        sem1List[f"block{i}"] = running[f"block{i}"]
+      elif i > 5:
+        sem2 += len(running[f"block{i}"])
+        sem2List[f"block{i}"] = running[f"block{i}"]
 
     # If there is more than one class Running
     if allClassRunCounts[index] > 1:
@@ -332,16 +331,16 @@ def generateScheduleV3(
       semBlocks = []
       offset = 1
 
-      # If sem1 is less than or equal to sem2, add to sem1
+
       if sem1 <= sem2:
         for block in sem1List:
           semBlocks.append(len(block))
 
+      # If sem1 is less than or equal to sem2, add to sem1
+      if sem1 <= sem2: [semBlocks.append(len(block)) for block in sem1List]
+
       # If sem2 is less than sem1, add to sem2
-      elif sem1 > sem2:
-        offset = 5
-        for block in sem2List:
-          semBlocks.append(len(block))
+      elif sem1 > sem2: [semBlocks.append(len(block)) for block in sem2List]
 
       # Get block with least classes
       leastBlock = semBlocks.index(min(semBlocks))
@@ -588,14 +587,20 @@ def generateScheduleV3(
     }
   }
 
-  # Update Student records
-  with open(studentsDir, "w") as outfile:
-      json.dump(students, outfile, indent=2)
-
   # Log Conflict to records
   with open(conflictsDir, "w") as outfile:
     json.dump(finalConflictLogs, outfile, indent=2)
 
+  for student in students:
+    for block in student["schedule"]:
+      if len(student["schedule"][block]) == 0:
+        if int(block[len(block)-1]) <= 5: student["schedule"][block].append(flex[0])
+        elif int(block[len(block)-1]) > 5: student["schedule"][block].append(flex[1])
+
+  # Update Student records
+  with open(studentsDir, "w") as outfile:
+      json.dump(students, outfile, indent=2)
+  
   return running
 
 if __name__ == '__main__':
