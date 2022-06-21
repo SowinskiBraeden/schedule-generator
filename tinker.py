@@ -1,4 +1,4 @@
-#!/usr/bin/python3
+#! python
 from prettytable import PrettyTable
 from typing import Tuple
 import json

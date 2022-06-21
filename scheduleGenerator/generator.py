@@ -1,6 +1,5 @@
-#!/usr/bin/env python3
+#! python
 import json
-import math
 import random
 from inspect import currentframe
 
@@ -79,7 +78,7 @@ running = {
 
 # These are the codes for Flex (spare) blocks
 # Semester 1 and 2
-flex = ["XAT--12A-S", "XAT--12B-S"]
+flex = ("XAT--12A-S", "XAT--12B-S")
 
 # V3 differs a lot by V1/2 as it does not focus on fitting the classes
 # into the time table first.
@@ -118,7 +117,7 @@ def generateScheduleV3(
   for i in range(len(activeCourses)):
     index = list(activeCourses)[i]
     if index not in emptyClasses: emptyClasses[index] = {}
-    classRunCount = math.floor(activeCourses[index]["Requests"] / median)
+    classRunCount = activeCourses[index]["Requests"] // median
     remaining = activeCourses[index]["Requests"] % median
 
     # Put # of classRunCount classes in emptyClasses
@@ -269,14 +268,10 @@ def generateScheduleV3(
   # Step 4 - Attempt to fit classes into timetable
   def stepIndex(offset: int, stepType: int) -> int:
     # stepType 0 is for stepping between first and second semester
-    if stepType == 0:
-      if offset == 0 or offset == -4: return 5
-      else: return -4
+    if stepType == 0: return 5 if offset == 0 or offset == -4 else -4
     
     # stepType 1 is for stepping between second and first semester
-    elif stepType == 1:
-      if offset == 0 or offset == 6: return -5
-      else: return 6
+    elif stepType == 1: return -5 if offset == 0 or offset == 6 else 6
 
     # Return Error if code is altered to cause error
     else: raise SystemExit(f"Invalid 'stepType' in func 'stepIndex' line {getLineNumber()}")
@@ -330,7 +325,6 @@ def generateScheduleV3(
       # Equally disperse into semesters classes
       semBlocks = []
       offset = 1
-
 
       if sem1 <= sem2:
         for block in sem1List:
@@ -404,14 +398,14 @@ def generateScheduleV3(
       # Check if conflicts have been resolved
       blocks = [student["schedule"][block] for block in student["schedule"]]
       # If there is exceptions, make them look normal in blocks
-      # list to ginore them when looking for clashes, and not to
+      # list to ignore them when looking for clashes, and not to
       # accidently overwrite while evaluating other classes
       if len(exceptions) > 0:
         for i in range(len(blocks)):
           if i in exceptions: blocks[i] = ['EXPT']
       conflicts = sum(1 for b in blocks if len(b)>1)
 
-      if conflicts == 0: hasConflicts = False
+      if conflicts == 0: break
       
       elif conflicts > 0:
 
