@@ -43,12 +43,12 @@ def getLineNumber(): return currentframe().f_back.f_lineno
 
 # Takes in information to create or add a new conflict
 # Returns if the particular student has a previous error
-def newConflict(pupilNum: str, email: str, type: str, code: str, description: str, logs: dict) -> bool:
+def newConflict(pupilNum: str, email: str, conflictType: str, code: str, description: str, logs: dict) -> bool:
   exists = True if pupilNum in logs else False
   if exists: logs[pupilNum].append({
       "Pupil #": pupilNum,
       "Email": email,
-      "Type": type,
+      "Type": conflictType,
       "Code": code,
       "Conflict": description
     })
@@ -56,7 +56,7 @@ def newConflict(pupilNum: str, email: str, type: str, code: str, description: st
     logs[pupilNum] = [{
       "Pupil #": pupilNum,
       "Email": email,
-      "Type": type,
+      "Type": conflictType,
       "Code": code,
       "Conflict": description
     }]
