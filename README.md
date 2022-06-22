@@ -16,7 +16,7 @@ This is the output after running it with the following command
   $ ./tinker.py
 ```
 
-!(preview)[/preview/generator-preview.png]
+![preview](/preview/generator-preview.png)
 
 
 A more in depth error log can be read with the additional argument
@@ -24,4 +24,4 @@ A more in depth error log can be read with the additional argument
   $ ./tinker.py errors
 ```
 
-!(preview)[/preview/error-preview.png]
+![preview](/preview/error-preview.png)
