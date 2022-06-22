@@ -9,3 +9,19 @@ V3 has a entirely different approach from V1 and V2, that you can read about at 
 the function in [`generator.py`](/scheduleGenerator/generator.py). The function is broken up into 6 steps, each step is labeled within  
 the function with a comment, giving a brief explination of what that step contributes to the  
 algorithm.
+
+
+This is the output after running it with the following command
+```
+  $ ./tinker.py
+```
+
+!(preview)[/preview/generator-preview.png]
+
+
+A more in depth error log can be read with the additional argument
+```
+  $ ./tinker.py errors
+```
+
+!(preview)[/preview/error-preview.png]
