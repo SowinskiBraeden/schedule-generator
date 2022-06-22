@@ -21,7 +21,6 @@ from util.generateCourses import getSampleCourses
     ...
   }
 
-
   running example:
   running: {
     "block1": {
@@ -44,21 +43,15 @@ def getLineNumber(): return currentframe().f_back.f_lineno
 # Returns if the particular student has a previous error
 def newConflict(pupilNum: str, email: str, conflictType: str, code: str, description: str, logs: dict) -> bool:
   exists = True if pupilNum in logs else False
-  if exists: logs[pupilNum].append({
-      "Pupil #": pupilNum,
-      "Email": email,
-      "Type": conflictType,
-      "Code": code,
-      "Conflict": description
-    })
-  else:
-    logs[pupilNum] = [{
-      "Pupil #": pupilNum,
-      "Email": email,
-      "Type": conflictType,
-      "Code": code,
-      "Conflict": description
-    }]
+  log = {
+    "Pupil #": pupilNum,
+    "Email": email,
+    "Type": conflictType,
+    "Code": code,
+    "Conflict": description
+  }
+  if exists: logs[pupilNum].append(log)
+  else: logs[pupilNum] = [log]
   return exists
 
 minReq, median, classCap = 18, 24, 30
