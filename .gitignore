@@ -4,7 +4,7 @@
 /scheduleGenerator/__pycache__/*
 
 # Test
-/test.py
+/*_test.py
 
 # Test output
 /output/*
