@@ -2,7 +2,7 @@
 import json
 import random
 from inspect import currentframe
-import pprint
+from string import hexdigits
 
 # Import from custom utilities
 from util.mockStudents import getSampleStudents
@@ -116,7 +116,7 @@ def generateScheduleV3(
 
     # Put # of classRunCount classes in emptyClasses
     for j in range(classRunCount):
-      emptyClasses[index][f"{index}-{j}"] = {
+      emptyClasses[index][f"{index}-{hexdigits[j]}"] = {
         "CrsNo": index,
         "Description": activeCourses[index]["Description"],
         "expectedLen": median # Number of students expected in this class / may be altered
@@ -128,14 +128,14 @@ def generateScheduleV3(
       while remaining > 0:
         for j in range(classRunCount):
           if remaining == 0: break
-          emptyClasses[index][f"{index}-{j}"]["expectedLen"] += 1
+          emptyClasses[index][f"{index}-{hexdigits[j]}"]["expectedLen"] += 1
           remaining -= 1
 
     # If we can create a class using remaining, but no other classes
     # exists, create class, and do not equalize
     elif remaining >= minReq:
       # Create a class using remaining
-      emptyClasses[index][f"{index}-{classRunCount}"] = {
+      emptyClasses[index][f"{index}-{hexdigits[classRunCount]}"] = {
         "CrsNo": index,
         "Description": activeCourses[index]["Description"],
         "expectedLen": remaining
@@ -144,10 +144,10 @@ def generateScheduleV3(
       classRunCount += 1
       if classRunCount >= 2:
         # Equalize (level) class expectedLen's
-        expectedLengths = [emptyClasses[index][f"{index}-{j}"]["expectedLen"] for j in range(classRunCount)]
+        expectedLengths = [emptyClasses[index][f"{index}-{hexdigits[j]}"]["expectedLen"] for j in range(classRunCount)]
         newExpectedLens = equal(expectedLengths)
         for j in range(len(newExpectedLens)):
-          emptyClasses[index][f"{index}-{j}"]["expectedLen"] = newExpectedLens[j]
+          emptyClasses[index][f"{index}-{hexdigits[j]}"]["expectedLen"] = newExpectedLens[j]
 
     # Else if we can't fit remaining in open slots in existing classes
     # and it is unable to create its own class,
@@ -155,12 +155,12 @@ def generateScheduleV3(
     elif minReq - remaining < classRunCount * (median - minReq):
       # Take 1 from each class till min requirment met
       for j in range(classRunCount):
-        emptyClasses[index][f"{index}-{j}"]["expectedLen"] -= 1
+        emptyClasses[index][f"{index}-{hexdigits[j]}"]["expectedLen"] -= 1
         remaining += 1
         if remaining == minReq: break
 
       # Create a class using remaining
-      emptyClasses[index][f"{index}-{classRunCount}"] = {
+      emptyClasses[index][f"{index}-{hexdigits[classRunCount]}"] = {
         "CrsNo": index,
         "Description": activeCourses[index]["Description"],
         "expectedLen": remaining
@@ -169,10 +169,10 @@ def generateScheduleV3(
       classRunCount += 1
 
       # Equalize (level) class expectedLen's
-      expectedLengths = [emptyClasses[index][f"{index}-{j}"]["expectedLen"] for j in range(classRunCount)]
+      expectedLengths = [emptyClasses[index][f"{index}-{hexdigits[j]}"]["expectedLen"] for j in range(classRunCount)]
       newExpectedLens = equal(expectedLengths)
       for j in range(len(newExpectedLens)):
-        emptyClasses[index][f"{index}-{j}"]["expectedLen"] = newExpectedLens[j]
+        emptyClasses[index][f"{index}-{hexdigits[j]}"]["expectedLen"] = newExpectedLens[j]
 
     else:
       # In the case that the remaining requests are unable to be resolved
@@ -180,8 +180,9 @@ def generateScheduleV3(
       # Will need to be ignored so later we can fold them into their alternative
       # choices
       for j in range(classRunCount):
-        if emptyClasses[index][f"{index}-{j}"]["expectedLen"] < classCap and remaining > 0: 
-          emptyClasses[index][f"{index}-{j}"]["expectedLen"] += 1
+        if remaining == 0: break
+        if emptyClasses[index][f"{index}-{hexdigits[j]}"]["expectedLen"] < classCap: 
+          emptyClasses[index][f"{index}-{hexdigits[j]}"]["expectedLen"] += 1
           remaining -= 1
 
     courseRunInfo[index] = {
@@ -294,7 +295,7 @@ def generateScheduleV3(
 
       # Spread classes throughout both semesters
       for i in range(courseRunInfo[course]["Total"]):
-        cname = f"{course}-{i}"
+        cname = f"{course}-{hexdigits[i]}"
         classInserted = False
         while not classInserted:
 
