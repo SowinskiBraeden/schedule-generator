@@ -191,7 +191,7 @@ def generateScheduleV3(
     }
     allClassRunCounts.append(classRunCount)
 
-
+  
   # Step 3 Fill emptyClasses with Students
   selectedCourses = {}
   tempStudents = list(students)
@@ -271,6 +271,10 @@ def generateScheduleV3(
     # Return Error if code is altered to cause error
     else: raise SystemExit(f"Invalid 'stepType' in func 'stepIndex' line {getLineNumber()}")
 
+  # Create copies for step 6
+  allClassRunCountsCopy = list(allClassRunCounts)
+  courseRunInfoCopy = dict(courseRunInfo)
+
   while len(allClassRunCounts) > 0:
     # Get highest resource class (most times run)
     index = allClassRunCounts.index(min(allClassRunCounts))
@@ -319,6 +323,7 @@ def generateScheduleV3(
     elif allClassRunCounts[index] == 1:
       # Equally disperse into semesters classes
       semBlocks = []
+      offset = 1
 
       if sem1 <= sem2:
         for block in sem1List:
@@ -334,7 +339,7 @@ def generateScheduleV3(
       leastBlock = semBlocks.index(min(semBlocks))
       cname = f"{course}-0"
 
-      running[f"block{leastBlock+1}"][cname] = {
+      running[f"block{leastBlock+offset}"][cname] = {
         "CrsNo": course,
         "Description": emptyClasses[course][cname]["Description"],
         "students": selectedCourses[cname]["students"],
@@ -363,9 +368,8 @@ def generateScheduleV3(
   studentsCritical, studentsAcceptable = 0, 0
 
   for student in students:
-    initialBlocks = [student["schedule"][block] for block in student["schedule"]]
-    conflicts = sum(1 for b in initialBlocks if len(b)>1)
-    hasConflicts = True if conflicts > 0 else False
+    blocks = [student["schedule"][block] for block in student["schedule"]]
+    hasConflicts = True if sum(1 for b in blocks if len(b)>1) > 0 else False
 
     # If there is no conflicts
     # and classes inserted to is equal to expectedClasses
@@ -384,147 +388,62 @@ def generateScheduleV3(
       "index": student["studentIndex"]
     }
 
-    # If we are unable to solve, we add to exceptions 
-    # and keep trying to resolve the rest of the schedule
-    exceptions = [] 
+    if hasConflicts:
+      for block in student["schedule"]:
+        [running[block][cname]["students"].remove(studentData) for cname in student["schedule"][block]]
+        student["schedule"][block] = []
 
-    while hasConflicts:
-      # Check if conflicts have been resolved
-      blocks = [student["schedule"][block] for block in student["schedule"]]
-      # If there is exceptions, make them look normal in blocks
-      # list to ignore them when looking for clashes, and not to
-      # accidently overwrite while evaluating other classes
-      if len(exceptions) > 0:
-        for i in range(len(blocks)):
-          if i in exceptions: blocks[i] = ['EXPT']
-      conflicts = sum(1 for b in blocks if len(b)>1)
+      # Find what class in student schedule has least run time
+      classes = []
+      runCounts = []
+      for block in blocks:
+        for cname in block:
+          classes.append(cname[:-2])
+          runCounts.append(courseRunInfoCopy[cname[:-2]]["Total"])
 
-      if conflicts == 0: break
-      
-      elif conflicts > 0:
+      availableBlocks = [f'block{i}' for i in range(1, 11)]
+      while len(classes) > 0:
+        index = runCounts.index(min(runCounts)) # Get class least run
 
-        blockLens = [len(block) for block in blocks]
-        freeBlocks = [index for index in range(len(blocks)) if len(blocks[index]) == 0]
+        found = False
 
-        clashIndex = blockLens.index(max(blockLens))
-        blockOut = f"block{clashIndex+1}"
-        classIndex = 0
-        done, advancedConflict = False, False
+        # Rebuild student schedule
+        for block in availableBlocks:
+          if found: break
+          for cname in running[block]:
+            if cname[:-2] == classes[index] and len(running[block][cname]["students"]) < classCap:
+              running[block][cname]["students"].append(studentData)
+              student["schedule"][block].append(cname)
+              availableBlocks.remove(block)
+              found = True
+              break
 
-        while not done:
-          classOut = blocks[clashIndex][classIndex]
-          found = False
-          for index in freeBlocks:
-            if found: break
-            if index != clashIndex:
-              blockIn = list(running)[index]
-              for cname in running[blockIn]:
-                if cname[:-2] == classOut[:-2] and len(running[blockIn][cname]["students"]) < classCap:
+        # Remove class after inserted or failed to insert
+        classes.remove(classes[index])
+        runCounts.remove(runCounts[index])
 
-                  # Update records
-                  student["schedule"][blockOut].remove(classOut)
-                  student["schedule"][blockIn].append(cname)
+        if not found:
+          # Try alternate
+          alternates = [alt["CrsNo"] for alt in students[student["studentIndex"]]["remainingAlts"] if alt["CrsNo"] not in flex and alt["CrsNo"] in courseRunInfoCopy]
+          if len(alternates) == 0: # If not alternates, create critical error
+            c_cr_count += 1
+            criticalCount += 1
+            if not newConflict(student["Pupil #"], "", "Critical", "C-CR", "Couldn't Resolve", conflictLogs): studentsCritical += 1
 
-                  running[blockOut][classOut]["students"].remove(studentData)
-                  running[blockIn][cname]["students"].append(studentData)
+          else:
+            # Get alternate least run
+            altRunCounts = [courseRunInfoCopy[alt]["Total"] for alt in alternates]
+            altIndex = altRunCounts.index(min(altRunCounts))
 
-                  found = True
-                  break
+            # add alternate
+            classes.append(alternates[altIndex])
+            runCounts.append(altRunCounts[altIndex])
 
-          if not found:
-            if classIndex < len(blocks[clashIndex])-1: classIndex += 1
-            elif classIndex == len(blocks[clashIndex])-1:
-              classIndex = 0
-              advancedConflict = True
-              done = True
-            else:
-              print(f"Fatal error ({getLineNumber()}): Impossible error")
-              continue
-          
-          elif found: done = True
-
-        if advancedConflict:
-          attemptResolve = True
-          classOutIndex = 0
-          while attemptResolve:
-            foundSolution = False
-            newClassOut = blocks[clashIndex][classOutIndex]
-            for blockIndex in range(len(running)):
-              if foundSolution: break
-              if blockIndex != clashIndex and blockIndex not in exceptions:
-                for cname in running[list(running)[blockIndex]]:
-                  if cname[:-2] == newClassOut[:-2]:
-                    blockIn = f"block{blockIndex+1}"
-                    if blockIndex in freeBlocks:
-                      if len(running[blockIn][cname]["students"]) < classCap:
-                        # In the rare or impossible case a student was not inserted to a class
-                        # And it weren't full, insert them into the class
-                        student["schedule"][blockOut].remove(newClassOut)
-                        student["schedule"][blockIn].append(cname)
-
-                        running[blockOut][newClassOut]["students"].remove(studentData)
-                        running[blockIn][cname]["students"].append(studentData)
-                        foundSolution = True
-                        break
-
-                    elif len(blocks[blockIndex]) == 1:
-                      oClassOut = blocks[blockIndex][0]
-                      found_oBlockSolution = False
-                      for oBlockIndex in range(len(running)):
-                        if found_oBlockSolution: break
-                        if oBlockIndex != clashIndex and oBlockIndex not in exceptions and oBlockIndex in freeBlocks:
-                          for ocname in running[list(running)[oBlockIndex]]:
-                            if ocname[:-2] == oClassOut[:-2]:
-                              oBlockIn = f"block{oBlockIndex+1}"
-                              if len(running[oBlockIn][ocname]["students"]) < classCap:
-                                student["schedule"][blockOut].remove(newClassOut)
-                                student["schedule"][blockIn].append(cname)
-                                student["schedule"][blockIn].remove(oClassOut)
-                                student["schedule"][oBlockIn].append(ocname)
-
-                                running[blockOut][newClassOut]["students"].remove(studentData)
-                                running[blockIn][cname]["students"].append(studentData)
-                                running[blockIn][oClassOut]["students"].remove(studentData)
-                                running[oBlockIn][ocname]["students"].append(studentData)
-
-                                found_oBlockSolution = True
-                                break
-
-                      if not found_oBlockSolution:
-                        exceptions.append(clashIndex)
-                        criticalCount += 1
-                        c_cr_count += 1
-                        if not newConflict(student["Pupil #"], "", "Critial", "C-CR", "Couldn't Resolve", conflictLogs): studentsCritical += 1 
-
-                      foundSolution = True
-                      break
-
-            if not foundSolution:
-              if classOutIndex < len(blocks[clashIndex]) - 1: classOutIndex += 1
-              elif classOutIndex == len(blocks[clashIndex]) - 1:
-                if len(student["remainingAlts"]) > 0:
-                  exceptions.append(clashIndex)
-                  criticalCount += 1
-                  c_cr_count += 1
-                  if not newConflict(student["Pupil #"], "", "Critical", "C-CR", "Couldn't Resolve", conflictLogs): studentsCritical += 1
-                  
-                  attemptResolve = False
-                  # Attempt to use alt
-                elif len(student["remainingAlts"]) == 0:
-                  exceptions.append(clashIndex)
-                  criticalCount += 1
-                  c_cr_count += 1
-                  if not newConflict(student["Pupil #"], "", "Critical", "C-CR", "Couldn't Resolve", conflictLogs): studentsCritical += 1
-                  
-                  attemptResolve = False
-              else: print("Impossible - Thanos")
-            elif foundSolution:
-              attemptResolve = False
-      
-      else:
-        print(f"Fatal error ({getLineNumber()}): Impossible error")
-        continue
-
+            # Remove alternate from remaining alternates
+            for remaining in students[student["studentIndex"]]["remainingAlts"]:
+              if remaining["CrsNo"] == alternates[altIndex]:
+                students[student["studentIndex"]]["remainingAlts"].remove(remaining)
+    
     metSelfRequirements = True if student["classes"] == student["expectedClasses"] else False
     while not metSelfRequirements:
       
@@ -581,7 +500,7 @@ def generateScheduleV3(
   for student in students:
     for block in student["schedule"]:
       if len(student["schedule"][block]) == 0:
-        student["schedule"][block].append(flex[0]) if int(block[len(block)-1]) <= 5 else student["schedule"][block].append(flex[1])
+        student["schedule"][block].append(flex[0]) if int(block[5:]) <= 5 else student["schedule"][block].append(flex[1])
 
   # Update Student records
   with open(studentsDir, "w") as outfile:
