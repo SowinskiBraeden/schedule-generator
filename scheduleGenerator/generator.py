@@ -318,7 +318,6 @@ def generateScheduleV3(
     elif allClassRunCounts[index] == 1:
       # Equally disperse into semesters classes
       semBlocks = []
-      offset = 1
 
       if sem1 <= sem2:
         for block in sem1List:
@@ -334,7 +333,7 @@ def generateScheduleV3(
       leastBlock = semBlocks.index(min(semBlocks))
       cname = f"{course}-0"
 
-      running[f"block{leastBlock+offset}"][course] = {
+      running[f"block{leastBlock+1}"][cname] = {
         "CrsNo": course,
         "Description": emptyClasses[course][cname]["Description"],
         "students": selectedCourses[cname]["students"],
