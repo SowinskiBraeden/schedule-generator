@@ -8,7 +8,6 @@ from string import hexdigits
 from util.mockStudents import getSampleStudents
 from util.generateCourses import getSampleCourses
 
-
 '''
   Block 1-5 is first semester while
   block 6-10 is second semester
@@ -271,8 +270,7 @@ def generateScheduleV3(
     # Return Error if code is altered to cause error
     else: raise SystemExit(f"Invalid 'stepType' in func 'stepIndex' line {getLineNumber()}")
 
-  # Create copies for step 6
-  allClassRunCountsCopy = list(allClassRunCounts)
+  # Create copy for step 6
   courseRunInfoCopy = dict(courseRunInfo)
 
   while len(allClassRunCounts) > 0:
@@ -389,25 +387,25 @@ def generateScheduleV3(
     }
 
     if hasConflicts:
+      # Clear student schedule
       for block in student["schedule"]:
         [running[block][cname]["students"].remove(studentData) for cname in student["schedule"][block]]
         student["schedule"][block] = []
 
       # Find what class in student schedule has least run time
-      classes = []
-      runCounts = []
+      classes, runCounts = [], []
       for block in blocks:
         for cname in block:
           classes.append(cname[:-2])
           runCounts.append(courseRunInfoCopy[cname[:-2]]["Total"])
 
+      # Rebuild student schedule
       availableBlocks = [f'block{i}' for i in range(1, 11)]
       while len(classes) > 0:
         index = runCounts.index(min(runCounts)) # Get class least run
-
         found = False
 
-        # Rebuild student schedule
+        # find slot for class
         for block in availableBlocks:
           if found: break
           for cname in running[block]:
