@@ -419,58 +419,58 @@ def generateScheduleV3(
               break
 
         if not found:
-          # Try alternate
-          alternates = [alt["CrsNo"] for alt in students[student["studentIndex"]]["remainingAlts"] if alt["CrsNo"] not in flex and alt["CrsNo"] in courseRunInfoCopy]
-          if len(alternates) == 0: # If not alternates, create critical error
-            # Determine all places class exists
-            existsIn, existingClassNames = [], []
-            for block in running:
-              for cname in running[block]:
-                if cname[:-2] == classes[index] and len(running[block][cname]["students"]) < classCap:
-                  existsIn.append(block)
-                  existingClassNames.append(cname)
+          # Determine all places class exists
+          existsIn, existingClassNames = [], []
+          for block in running:
+            for cname in running[block]:
+              if cname[:-2] == classes[index] and len(running[block][cname]["students"]) < classCap:
+                existsIn.append(block)
+                existingClassNames.append(cname)
 
-            # Attempt to fix
-            solution = False
-            if len(existsIn) > 0:
-              for i, existing in enumerate(existsIn):
+          # Attempt to fix
+          solution = False
+          if len(existsIn) > 0:
+            for i, existing in enumerate(existsIn):
+              if solution: break
+              classOut = student["schedule"][existing][0]
+              for block in running:
                 if solution: break
-                classOut = student["schedule"][existing][0]
-                for block in running:
-                  if solution: break
-                  if block == existing or block not in availableBlocks: continue
-                  for cname in running[block]:
-                    if cname[:-2] == classOut[:-2] and len(running[block][cname]["students"]) < classCap:
-                      # Move to existing class elsewhere
-                      student["schedule"][block].append(cname)
-                      running[block][cname]["students"].append(studentData)
+                if block == existing or block not in availableBlocks: continue
+                for cname in running[block]:
+                  if cname[:-2] == classOut[:-2] and len(running[block][cname]["students"]) < classCap:
+                    # Move to existing class elsewhere
+                    student["schedule"][block].append(cname)
+                    running[block][cname]["students"].append(studentData)
 
-                      # Overwrite old class
-                      running[existing][student["schedule"][existing][0]]["students"].remove(studentData)
-                      student["schedule"][existing][0] = existingClassNames[i]
-                      running[existing][existingClassNames[i]]["students"].append(studentData)
-                      
-                      solution = True
-                      break
+                    # Overwrite old class
+                    running[existing][student["schedule"][existing][0]]["students"].remove(studentData)
+                    student["schedule"][existing][0] = existingClassNames[i]
+                    running[existing][existingClassNames[i]]["students"].append(studentData)
+                    
+                    solution = True
+                    break
 
-            if not solution:
+          if not solution:
+            # Try alternate
+            alternates = [alt["CrsNo"] for alt in students[student["studentIndex"]]["remainingAlts"] if alt["CrsNo"] not in flex and alt["CrsNo"] in courseRunInfoCopy]
+            if len(alternates) == 0: # If not alternates, create critical error
               c_cr_count += 1
               criticalCount += 1
               if not newConflict(student["Pupil #"], "", "Critical", "C-CR", "Couldn't Resolve", conflictLogs): studentsCritical += 1
 
-          else:
-            # Get alternate least run
-            altRunCounts = [courseRunInfoCopy[alt]["Total"] for alt in alternates]
-            altIndex = altRunCounts.index(min(altRunCounts))
+            else:
+              # Get alternate least run
+              altRunCounts = [courseRunInfoCopy[alt]["Total"] for alt in alternates]
+              altIndex = altRunCounts.index(min(altRunCounts))
 
-            # add alternate
-            classes.append(alternates[altIndex])
-            runCounts.append(altRunCounts[altIndex])
+              # add alternate
+              classes.append(alternates[altIndex])
+              runCounts.append(altRunCounts[altIndex])
 
-            # Remove alternate from remaining alternates
-            for remaining in students[student["studentIndex"]]["remainingAlts"]:
-              if remaining["CrsNo"] == alternates[altIndex]:
-                students[student["studentIndex"]]["remainingAlts"].remove(remaining)
+              # Remove alternate from remaining alternates
+              for remaining in students[student["studentIndex"]]["remainingAlts"]:
+                if remaining["CrsNo"] == alternates[altIndex]:
+                  students[student["studentIndex"]]["remainingAlts"].remove(remaining)
 
         # Remove class after inserted or failed to insert
         classes.remove(classes[index])
