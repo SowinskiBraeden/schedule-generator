@@ -1,9 +1,7 @@
 #! python
 import json
 
-f = open('./output/students.json')
-students = json.load(f)
-f.close()
+with open('./output/students.json') as f: students = json.load(f)
 
 couldnt_resolve = 0
 missing_classes = 0

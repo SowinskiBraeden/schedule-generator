@@ -37,9 +37,8 @@ from util.generateCourses import getSampleCourses
   }
 '''
 
-def exists(n): return True if n not in ('', None) else False
-
-def getLineNumber(): return currentframe().f_back.f_lineno
+exists = lambda n : True if n not in ('', None) else False
+getLineNumber = lambda : currentframe().f_back.f_lineno
 
 # Takes in information to create or add a new conflict
 # Returns if the particular student has a previous error
