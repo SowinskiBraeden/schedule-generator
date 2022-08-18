@@ -1,4 +1,5 @@
 #! python
+from os.path import exists as file_exists
 from prettytable import PrettyTable
 from typing import Tuple
 from time import time, sleep
@@ -79,10 +80,17 @@ if __name__ == '__main__':
     errors, _, _ = errorOutput(sampleStudents)
     print(errors)
 
-  elif sys.argv[1].lower() == "norefresh" or sys.argv[1].lower() == "no_refresh":
+    with open("./output/timetable.json", "w") as outfile:
+      json.dump(timetable, outfile, indent=2)
+
+  elif sys.argv[1].lower() == "no_refresh":
     print('\nGenerating...\n')
 
     st = time() # Start time
+
+    if not file_exists('./output/students.json') or not file_exists('./output/courses.json'):
+      print('\n No previous data exists, please use the following command\n./tinker.py generate_data')
+      exit()
 
     with open('./output/students.json') as f: sampleStudents = json.load(f)
     with open('./output/courses.json') as f: sampleCourses = json.load(f)
@@ -106,6 +114,24 @@ if __name__ == '__main__':
     errors, _, _ = errorOutput(sampleStudents)
     print(errors)
 
+    with open("./output/timetable.json", "w") as outfile:
+      json.dump(timetable, outfile, indent=2)
+
+  elif sys.argv[1].lower() == "generate_data":
+    t = threading.Thread(target=processing, args=('Collection student requests',))
+    t.start() # Start animation
+    _ = getSampleStudents("./sample_data/course_selection_data.csv", True)
+    done = True # End Animation
+    print('\nStudent list generated.\n')
+
+    t = threading.Thread(target=processing, args=('Collection Course Information',))
+    done = False # reset animation
+    t.start() # Start animation
+    _ = getSampleCourses("./sample_data/course_selection_data.csv", True)
+    done = True # End Animation
+    print('\nCourse Information Collected.\n')
+    print('You can now use the following command\n./tinker.py no_refresh')
+
   elif sys.argv[1].upper() == "ERRORS":
     f = open('./output/students.json')
     studentData = json.load(f)
@@ -128,5 +154,3 @@ if __name__ == '__main__':
     print("Invalid argument")
     exit()
 
-  with open("./output/timetable.json", "w") as outfile:
-    json.dump(timetable, outfile, indent=2)
