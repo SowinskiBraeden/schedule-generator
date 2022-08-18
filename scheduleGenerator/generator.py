@@ -56,7 +56,6 @@ def newConflict(pupilNum: str, email: str, conflictType: str, code: str, descrip
   return exists if conflictType == "Critical" else False
 
 minReq, median, classCap = 18, 24, 30
-activeCourses = {}
 running = {
   "block1": {},
   "block2": {},
@@ -80,19 +79,21 @@ flex = ("XAT--12A-S", "XAT--12B-S")
 # Then it starts to attempt to fit all classes into a timetable, making corretions along
 # the way. Corrections being moving a students class
 def generateScheduleV3(
-  students: list, 
-  courses: dict, 
-  blockClassLimit: int=40,
+  students: list, # Refer to ../util/mockStudents.py to see the students list structure
+  courses: dict, # Reger to ../util/generateCourses.py to see the courses dictionary structure
+  blockClassLimit: int=40, # Block class limit is the number of classrooms available per block. Default 40 classes per block
   studentsDir: str="../output/students.json",
   conflictsDir: str="../output/conflicts.json"
-  ) -> dict[str, dict]:
+  ) -> dict[str, dict]: # Returns the completed 'running' dictionary from above
   
+
   def equal(l: list) -> list: # Used to equalize list of numbers
     q,r = divmod(sum(l),len(l))
     return [q+1]*r + [q]*(len(l)-r)
 
 
   # Step 1 - Calculate which classes can run
+  activeCourses = {}
   for student in students:
     # Tally class request
     for request in (request for request in student["requests"] if not request["alt"] and request["CrsNo"] not in flex):
@@ -107,32 +108,30 @@ def generateScheduleV3(
   allClassRunCounts = []
   courseRunInfo = {} # Generated now, used in step 4
   emptyClasses = {} # List of all classes with how many students should be entered during step 3
-  # calculate # of times to run class
+  # calculate number of times to run class
   for i in range(len(activeCourses)):
     index = list(activeCourses)[i]
     if index not in emptyClasses: emptyClasses[index] = {}
     classRunCount = activeCourses[index]["Requests"] // median
     remaining = activeCourses[index]["Requests"] % median
 
-    # Put # of classRunCount classes in emptyClasses
+    # Put number of classRunCount classes in emptyClasses
     for j in range(classRunCount):
       emptyClasses[index][f"{index}-{hexdigits[j]}"] = {
         "CrsNo": index,
         "Description": activeCourses[index]["Description"],
-        "expectedLen": median # Number of students expected in this class / may be altered
+        "expectedLen": median # Number of students expected in this class / may be altered later
       }
 
     # If remaining fit in open slots in existing classes
     if remaining <= classRunCount * (classCap - median):
       # Equally disperse remaining into existing classes
-      while remaining > 0:
-        for j in range(classRunCount):
-          if remaining == 0: break
-          emptyClasses[index][f"{index}-{hexdigits[j]}"]["expectedLen"] += 1
-          remaining -= 1
+      for j in range(classRunCount):
+        if remaining == 0: break
+        emptyClasses[index][f"{index}-{hexdigits[j]}"]["expectedLen"] += 1
+        remaining -= 1
 
-    # If we can create a class using remaining, but no other classes
-    # exists, create class, and do not equalize
+    # If we can create a class using remaining, create class
     elif remaining >= minReq:
       # Create a class using remaining
       emptyClasses[index][f"{index}-{hexdigits[classRunCount]}"] = {
@@ -142,6 +141,7 @@ def generateScheduleV3(
       }
 
       classRunCount += 1
+      # If a class previously existed
       if classRunCount >= 2:
         # Equalize (level) class expectedLen's
         expectedLengths = [emptyClasses[index][f"{index}-{hexdigits[j]}"]["expectedLen"] for j in range(classRunCount)]
@@ -149,9 +149,10 @@ def generateScheduleV3(
         for j in range(len(newExpectedLens)):
           emptyClasses[index][f"{index}-{hexdigits[j]}"]["expectedLen"] = newExpectedLens[j]
 
-    # Else if we can't fit remaining in open slots in existing classes
-    # and it is unable to create its own class,
-    # and requiered number to make a class is less than the max number we can provide from existing classes
+    # Else if we can't fit remaining into available slots in existing classes,
+    # and it's unable to create its own class,
+    # and the required amount (minReq - remaining) to make a class is less than
+    # the number that existing classes can provide (classRunCount * (median - minReq))
     elif minReq - remaining < classRunCount * (median - minReq):
       # Take 1 from each class till min requirment met
       for j in range(classRunCount):
@@ -159,7 +160,7 @@ def generateScheduleV3(
         remaining += 1
         if remaining == minReq: break
 
-      # Create a class using remaining
+      # Create a class using remaining + required amount from existing classes
       emptyClasses[index][f"{index}-{hexdigits[classRunCount]}"] = {
         "CrsNo": index,
         "Description": activeCourses[index]["Description"],
@@ -176,9 +177,9 @@ def generateScheduleV3(
 
     else:
       # In the case that the remaining requests are unable to be resolved
-      # Fill as many requests into class as possible, any left that can't fit,
+      # Fill as many requests into existing classes. Any left that can't fit,
       # Will need to be ignored so later we can fold them into their alternative
-      # choices
+      # requests
       for j in range(classRunCount):
         if remaining == 0: break
         if emptyClasses[index][f"{index}-{hexdigits[j]}"]["expectedLen"] < classCap: 
@@ -192,11 +193,13 @@ def generateScheduleV3(
     allClassRunCounts.append(classRunCount)
 
   
-  # Step 3 Fill emptyClasses with Students
+  # Step 3 - Fill 'emptyClasses' with Students
   selectedCourses = {}
   tempStudents = list(students)
-  
+   
   while len(tempStudents) > 0:
+    # Choose random student to prevent any success
+    # bias to students at the top of the list
     student = tempStudents[random.randint(0, len(tempStudents)-1)]
 
     alternates = [request for request in student["requests"] if request["alt"]]
@@ -220,7 +223,7 @@ def generateScheduleV3(
                 getAvailableCourse = False
                 break
               elif len(selectedCourses[cname]["students"]) == emptyClasses[course][cname]["expectedLen"]:
-                # If class is full, and is last class of that course
+                # If class is full, and there's no more classes available for that course
                 if cname[len(cname)-1] == f"{len(emptyClasses[course])-1}":
                   if len(alternates) > 0:
                     # Use alternate
@@ -276,7 +279,7 @@ def generateScheduleV3(
 
   while len(allClassRunCounts) > 0:
     # Get highest resource class (most times run)
-    index = allClassRunCounts.index(min(allClassRunCounts))
+    index = allClassRunCounts.index(max(allClassRunCounts))
     course = list(courseRunInfo)[index]
 
     # Tally first and second semester
@@ -323,10 +326,6 @@ def generateScheduleV3(
       # Equally disperse into semesters classes
       semBlocks = []
       offset = 1
-
-      if sem1 <= sem2:
-        for block in sem1List:
-          semBlocks.append(len(block))
 
       # If sem1 is less than or equal to sem2, add to sem1
       if sem1 <= sem2: [semBlocks.append(len(block)) for block in sem1List]
@@ -388,12 +387,12 @@ def generateScheduleV3(
     }
 
     if hasConflicts:
-      # Clear student schedule
+      # Clear student schedule to restructure
       for block in student["schedule"]:
         [running[block][cname]["students"].remove(studentData) for cname in student["schedule"][block]]
         student["schedule"][block] = []
 
-      # Find what class in student schedule has least run time
+      # Find class in student schedule that's run the least
       classes, runCounts = [], []
       for block in blocks:
         for cname in block:
@@ -452,7 +451,7 @@ def generateScheduleV3(
           if not solution:
             # Try alternate
             alternates = [alt["CrsNo"] for alt in students[student["studentIndex"]]["remainingAlts"] if alt["CrsNo"] not in flex and alt["CrsNo"] in courseRunInfoCopy]
-            if len(alternates) == 0: # If not alternates, create critical error
+            if len(alternates) == 0: # If no alternates, create critical error
               c_cr_count += 1
               criticalCount += 1
               if not newConflict(student["Pupil #"], "", "Critical", "C-CR", "Couldn't Resolve", conflictLogs): studentsCritical += 1
@@ -476,27 +475,23 @@ def generateScheduleV3(
         runCounts.remove(runCounts[index])
 
     metSelfRequirements = True if student["classes"] == student["expectedClasses"] else False
-    while not metSelfRequirements:
+    if not metSelfRequirements:
       
       if (student["expectedClasses"] - 2) <= student["classes"] < student["expectedClasses"]:
         a_mc_count += 1
         acceptableCount += 1
         if not newConflict(student["Pupil #"], "", "Acceptable", "A-MC", "Missing 1-2 Classses", conflictLogs): studentsAcceptable += 1
-        break
 
       elif student["classes"] < (student["expectedClasses"] - 2):
         # Difference between classes inserted to and
-        # expected classes is too great, attempt to fix
+        # expected classes is too great
         if student["Pupil #"] in conflictLogs:
           c_mc_count += 1
           criticalCount += 1
           if not newConflict(student["Pupil #"], "", "Critical", "C-MC", "Missing too many Classses", conflictLogs): studentsCritical += 1
 
-        break
-
       else:
-        print(f"Fatal error ({getLineNumber()}): Impossible error")
-        break
+        print(f"Fatal error ({getLineNumber()}): Impossible error") # Just in case
 
   finalConflictLogs = {
     "Conflicts": conflictLogs,
@@ -528,6 +523,7 @@ def generateScheduleV3(
   with open(conflictsDir, "w") as outfile:
     json.dump(finalConflictLogs, outfile, indent=2)
 
+  # Insert flex (spare) course codes to empty blocks
   for student in students:
     for block in student["schedule"]:
       if len(student["schedule"][block]) == 0:

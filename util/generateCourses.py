@@ -23,7 +23,7 @@ def getSampleCourses(data_dir, log=False) -> dict:
         }
 
   if log:
-    with open("./output/realCourses.json", "w") as outfile:
+    with open("./output/courses.json", "w") as outfile:
       json.dump(realCourses, outfile, indent=2)
         
   return realCourses
@@ -32,5 +32,5 @@ def getSampleCourses(data_dir, log=False) -> dict:
 if __name__ == '__main__':
   courseSet: dict = getSampleCourses("../sample_data/course_selection_data.csv")
 
-  with open("../output/realCourses.json", "w") as outfile:
+  with open("../output/courses.json", "w") as outfile:
     json.dump(courseSet, outfile, indent=2)
