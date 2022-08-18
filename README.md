@@ -17,7 +17,7 @@ Here is the list of commands.
   $ ./tinker.py generate_data
 ```
 
-3. Generate timetable from existing files (faster), requires last command run
+3. Generate timetable from existing files (faster), requires last command run once
 ```
   $ ./tinker.py no_refresh
 ```
