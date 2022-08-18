@@ -47,7 +47,7 @@ def errorOutput(students) -> Tuple[PrettyTable, dict, dict]:
 if __name__ == '__main__':
   
   if len(sys.argv) == 1:
-    print('\nGenerating...\n')
+    print()
 
     st = time() # Start time
 
@@ -84,7 +84,7 @@ if __name__ == '__main__':
       json.dump(timetable, outfile, indent=2)
 
   elif sys.argv[1].lower() == "no_refresh":
-    print('\nGenerating...\n')
+    print()
 
     st = time() # Start time
 
