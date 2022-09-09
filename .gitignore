@@ -1,0 +1,10 @@
+# Pycache
+/__pycache__/*
+/util/__pycache__/*
+/scheduleGenerator/__pycache__/*
+
+# Test
+/*_test.py
+
+# Test output
+/output/*
