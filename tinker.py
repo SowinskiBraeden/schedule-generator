@@ -29,7 +29,7 @@ def processing(msg: str):
     sys.stdout.flush()
     sleep(0.1)
 
-def errorOutput(students): #-> Tuple[PrettyTable, dict, dict]:
+def errorOutput(students) -> Tuple[PrettyTable, dict, dict]:
   # Error Table calulation / output  
   f = open('./output/conflicts.json')
   conflicts = json.load(f)
