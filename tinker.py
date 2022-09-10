@@ -1,4 +1,4 @@
-#! python
+#!/usr/bin/env python
 from os.path import exists as file_exists
 from prettytable import PrettyTable
 from typing import Tuple

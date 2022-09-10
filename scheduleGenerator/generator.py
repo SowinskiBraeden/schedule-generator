@@ -1,4 +1,4 @@
-#! python
+#!/usr/bin/env python
 import json
 import random
 from inspect import currentframe
@@ -266,10 +266,10 @@ def generateScheduleV3(
   # Step 4 - Attempt to fit classes into timetable
   def stepIndex(offset: int, stepType: int) -> int:
     # stepType 0 is for stepping between first and second semester
-    if stepType == 0: return 5 if offset == 0 or offset == -4 else -4
+    if stepType == 0: return 5 if offset in (0, -4) else -4
     
     # stepType 1 is for stepping between second and first semester
-    elif stepType == 1: return -5 if offset == 0 or offset == 6 else 6
+    elif stepType == 1: return -5 if offset in (0, 6) else 6
 
     # Return Error if code is altered to cause error
     else: raise SystemExit(f"Invalid 'stepType' in func 'stepIndex' line {getLineNumber()}")

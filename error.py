@@ -1,4 +1,4 @@
-#! python
+#!/usr/bin/env python
 import json
 
 with open('./output/students.json') as f: students = json.load(f)
