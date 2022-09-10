@@ -12,16 +12,20 @@ import sys
 from util.mockStudents import getSampleStudents
 from util.generateCourses import getSampleCourses
 
+# Import other utilities
+from util.debug import debug
+
 # Import Algorithm
 from scheduleGenerator.generator import generateScheduleV3
 
 done = False
 
 # consts
-blockClassLimit = 68
+blockClassLimit = 40
 
-print(f'\n>> Debug: Current blockClassLimit = {blockClassLimit}')
-
+print()
+debug(f'Current blockClassLimit = {blockClassLimit}')
+  
 def processing(msg: str):
   for c in itertools.cycle(['|', '/', '-', '\\']):
     if done: break
@@ -56,43 +60,62 @@ if __name__ == '__main__':
 
     st = time() # Start time
 
-    t = threading.Thread(target=processing, args=('Collection student requests',))
-    t.start() # Start animation
-    sampleStudents = getSampleStudents("./sample_data/course_selection_data.csv", True)
-    done = True # End Animation
-    print('\nStudent list generated.\n')
-
-    t = threading.Thread(target=processing, args=('Collection Course Information',))
-    done = False # reset animation
-    t.start() # Start animation
-    sampleCourses = getSampleCourses("./sample_data/course_selection_data.csv", True)
-    done = True # End Animation
-    print('\nCourse Information Collected.\n')
+    showError = False
+    noAnim = False
+    for e in sys.argv:
+      if e.lower() == 'showerror': showError = True
+      if e.lower() == 'noanim': noAnim = True
     
-    sleep(0.1)
-    t = threading.Thread(target=processing, args=('Processing',))
-    done = False # reset animation
-    t.start() # Start animation
-    timetable = {}
-    timetable["Version"] = 3
-    timetable["timetable"] = generateScheduleV3(sampleStudents, sampleCourses, blockClassLimit, "./output/students.json", "./output/conflicts.json")
+    if noAnim:
+      sampleStudents = getSampleStudents("./sample_data/course_selection_data.csv", True)
+      sampleCourses = getSampleCourses("./sample_data/course_selection_data.csv", True)
+      timetable = {}
+      timetable["Version"] = 3
+      timetable["timetable"] = generateScheduleV3(sampleStudents, sampleCourses, blockClassLimit, "./output/students.json", "./output/conflicts.json")
+    else:
+      t = threading.Thread(target=processing, args=('Collection student requests',))
+      t.start() # Start animation
+      sampleStudents = getSampleStudents("./sample_data/course_selection_data.csv", True)
+      done = True # End Animation
+      print('\nStudent list generated.\n')
 
-    done = True # End Animation
+
+      t = threading.Thread(target=processing, args=('Collection Course Information',))
+      done = False # reset animation
+      t.start() # Start animation
+      sampleCourses = getSampleCourses("./sample_data/course_selection_data.csv", True)
+      done = True # End Animation
+      print('\nCourse Information Collected.\n')
+      
+      sleep(0.1)
+      t = threading.Thread(target=processing, args=('Processing',))
+      done = False # reset animation
+      t.start() # Start animation
+      timetable = {}
+      timetable["Version"] = 3
+      timetable["timetable"] = generateScheduleV3(sampleStudents, sampleCourses, blockClassLimit, "./output/students.json", "./output/conflicts.json")
+
+      done = True # End Animation
+    
     et = time() # End time
     elapsed_time = round((et - st), 3) # Execution time
     print(f'\n\nDone - Finished in {elapsed_time} seconds\n')
 
-    for e in sys.argv:
-      if e.lower() == 'showerror':
-        errors, _, _ = errorOutput(sampleStudents)
-        print(errors)
-        break
+    if showError:
+      errors, _, _ = errorOutput(sampleStudents)
+      print(errors)
 
     with open("./output/timetable.json", "w") as outfile:
       json.dump(timetable, outfile, indent=2)
 
   elif sys.argv[1].lower() == "no_refresh":
     print()
+
+    showError = False
+    noAnim = False
+    for e in sys.argv:
+      if e.lower() == 'showerror': showError = True
+      if e.lower() == 'noanim': noAnim = True
 
     st = time() # Start time
 
@@ -108,22 +131,25 @@ if __name__ == '__main__':
       for i in range(1, 11): student["schedule"][f"block{i}"] = []
       student["classes"] = 0
     
-    t = threading.Thread(target=processing, args=('Processing',))
-    t.start() # Start animation
-    timetable = {}
-    timetable["Version"] = 3
-    timetable["timetable"] = generateScheduleV3(sampleStudents, sampleCourses, blockClassLimit, "./output/students.json", "./output/conflicts.json")
-
-    done = True # End Animation
+    if noAnim:
+      timetable = {}
+      timetable["Version"] = 3
+      timetable["timetable"] = generateScheduleV3(sampleStudents, sampleCourses, blockClassLimit, "./output/students.json", "./output/conflicts.json")
+    else :
+      t = threading.Thread(target=processing, args=('Processing',))
+      t.start() # Start animation
+      timetable = {}
+      timetable["Version"] = 3
+      timetable["timetable"] = generateScheduleV3(sampleStudents, sampleCourses, blockClassLimit, "./output/students.json", "./output/conflicts.json")
+      done = True # End Animation
+    
     et = time() # End time
     elapsed_time = round((et - st), 3) # Execution time
     print(f'\n\nDone - Finished in {elapsed_time} seconds\n')
 
-    for e in sys.argv:
-      if e.lower() == 'showerror':
-        errors, _, _ = errorOutput(sampleStudents)
-        print(errors)
-        break
+    if showError:
+      errors, _, _ = errorOutput(sampleStudents)
+      print(errors)
 
     with open("./output/timetable.json", "w") as outfile:
       json.dump(timetable, outfile, indent=2)

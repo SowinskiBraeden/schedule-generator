@@ -8,6 +8,9 @@ from string import hexdigits
 from util.mockStudents import getSampleStudents
 from util.generateCourses import getSampleCourses
 
+# Import other utilites
+from util.debug import debug
+
 '''
   Block 1-5 is first semester while
   block 6-10 is second semester
@@ -285,14 +288,16 @@ def generateScheduleV3(
     # Tally first and second semester
     sem1, sem2 = 0, 0
     sem1List, sem2List = {}, {}
+    allSemBlockLens = []
     for i in range(1, 11):
+      allSemBlockLens.append(len(running[f"block{i}"]))
       if i <= 5:
         sem1 += len(running[f"block{i}"])
         sem1List[f"block{i}"] = running[f"block{i}"]
-      elif i > 5:
+      elif i > 5: 
         sem2 += len(running[f"block{i}"])
         sem2List[f"block{i}"] = running[f"block{i}"]
-
+  
     # If there is more than one class Running
     if allClassRunCounts[index] > 1:
       blockIndex = 0 if sem1 <= sem2 else 5
@@ -306,7 +311,7 @@ def generateScheduleV3(
         while not classInserted:
 
           blockIndex += offset
-          if len(running[list(running)[blockIndex]]) < blockClassLimit:
+          if len(running[f'block{blockIndex+1}']) < blockClassLimit:
             running[list(running)[blockIndex]][cname] = {
               "CrsNo": course,
               "Description": emptyClasses[course][cname]["Description"],
@@ -324,20 +329,12 @@ def generateScheduleV3(
     # If the class only runs once, place in semester with least classes
     elif allClassRunCounts[index] == 1:
       # Equally disperse into semesters classes
-      semBlocks = []
-      offset = 1
-
-      # If sem1 is less than or equal to sem2, add to sem1
-      if sem1 <= sem2: [semBlocks.append(len(block)) for block in sem1List]
-
-      # If sem2 is less than sem1, add to sem2
-      elif sem1 > sem2: [semBlocks.append(len(block)) for block in sem2List]
 
       # Get block with least classes
-      leastBlock = semBlocks.index(min(semBlocks))
+      leastBlock = allSemBlockLens.index(min(allSemBlockLens)) + 1
       cname = f"{course}-0"
 
-      running[f"block{leastBlock+offset}"][cname] = {
+      running[f"block{leastBlock}"][cname] = {
         "CrsNo": course,
         "Description": emptyClasses[course][cname]["Description"],
         "students": selectedCourses[cname]["students"],
@@ -349,6 +346,15 @@ def generateScheduleV3(
     if allClassRunCounts[index] == 0:
       allClassRunCounts.remove(allClassRunCounts[index])
       courseRunInfo.pop(list(courseRunInfo)[index])
+
+  # Debug to json for analysis
+  if blockClassLimit == 40:  
+    with open('./output/timetable-debug1.json', 'w') as outfile:
+      json.dump(running, outfile, indent=2)
+
+  else: 
+    with open('./output/timetable-debug2.json', 'w') as outfile:
+      json.dump(running, outfile, indent=2)
 
 
   # Step 5 - Fill student schedule
@@ -531,7 +537,7 @@ def generateScheduleV3(
 
   # Update Student records
   with open(studentsDir, "w") as outfile:
-      json.dump(students, outfile, indent=2)
+    json.dump(students, outfile, indent=2)
   
   return running
 
