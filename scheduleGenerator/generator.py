@@ -347,15 +347,6 @@ def generateScheduleV3(
       allClassRunCounts.remove(allClassRunCounts[index])
       courseRunInfo.pop(list(courseRunInfo)[index])
 
-  # Debug to json for analysis
-  if blockClassLimit == 40:  
-    with open('./output/timetable-debug1.json', 'w') as outfile:
-      json.dump(running, outfile, indent=2)
-
-  else: 
-    with open('./output/timetable-debug2.json', 'w') as outfile:
-      json.dump(running, outfile, indent=2)
-
 
   # Step 5 - Fill student schedule
   for block in running:
