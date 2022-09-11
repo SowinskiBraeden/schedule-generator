@@ -23,8 +23,8 @@ done = False
 # consts
 blockClassLimit = 40
 
-print()
-debug(f'Current blockClassLimit = {blockClassLimit}')
+# print()
+# debug(f'Current blockClassLimit = {blockClassLimit}')
   
 def processing(msg: str):
   for c in itertools.cycle(['|', '/', '-', '\\']):

@@ -286,22 +286,15 @@ def generateScheduleV3(
     course = list(courseRunInfo)[index]
 
     # Tally first and second semester
-    sem1, sem2 = 0, 0
-    sem1List, sem2List = {}, {}
-    allSemBlockLens = []
-    for i in range(1, 11):
-      allSemBlockLens.append(len(running[f"block{i}"]))
-      if i <= 5:
-        sem1 += len(running[f"block{i}"])
-        sem1List[f"block{i}"] = running[f"block{i}"]
-      elif i > 5: 
-        sem2 += len(running[f"block{i}"])
-        sem2List[f"block{i}"] = running[f"block{i}"]
+    sem1 = sum(len(running[f'block{i}']) for i in range(1, 6))
+    sem2 = sum(len(running[f'block{i}']) for i in range(6, 11))
+    allSemBlockLens = [len(running[f'block{i}']) for i in range(1, 11)]
   
     # If there is more than one class Running
     if allClassRunCounts[index] > 1:
-      blockIndex = 0 if sem1 <= sem2 else 5
-      stepType = 0 if sem1 <= sem2 else 1
+      blockIndex = allSemBlockLens.index(min(allSemBlockLens))
+      startSem = 1 if blockIndex < 5 else 2
+      stepType = 0 if blockIndex < 5 else 1
       offset = 0
 
       # Spread classes throughout both semesters
@@ -323,7 +316,7 @@ def generateScheduleV3(
           offset = stepIndex(offset, stepType)
 
           if blockIndex >= 9:
-            blockIndex = 0 if sem1 <= sem2 else 5
+            blockIndex = 0 if stepType == 0 else 5
             offset = 0
 
     # If the class only runs once, place in semester with least classes
@@ -347,6 +340,9 @@ def generateScheduleV3(
       allClassRunCounts.remove(allClassRunCounts[index])
       courseRunInfo.pop(list(courseRunInfo)[index])
 
+  # # Debug step 4 output
+  # for i in range(1, 6):
+  #   debug(f'block{i} - {len(running[f"block{i}"])}  |  block{i+5} - {len(running[f"block{i+5}"])}')
 
   # Step 5 - Fill student schedule
   for block in running:
