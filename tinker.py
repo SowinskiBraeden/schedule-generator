@@ -63,8 +63,8 @@ if __name__ == '__main__':
     showError = False
     noAnim = False
     for e in sys.argv:
-      if e.lower() == 'showerror': showError = True
-      if e.lower() == 'noanim': noAnim = True
+      if e.lower().replace('_', '') == 'showerror': showError = True
+      if e.lower().replace('_', '') == 'noanim': noAnim = True
     
     if noAnim:
       sampleStudents = getSampleStudents("./sample_data/course_selection_data.csv", True)
