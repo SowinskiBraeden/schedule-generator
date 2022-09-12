@@ -13,8 +13,7 @@ most_frequent = lambda l : max(set(l), key = l.count)
 
 def getEstimatedGrade(pupil: dict) -> int:
   grades = [] # List of all possible grades
-  for request in pupil["requests"]:
-    if request["CrsNo"] in flex: continue
+  for request in (r for r in pupil["requests"] if r not in flex):
     for extractedGrade in [int(s) for s in request["CrsNo"].split("-") if s.isdigit()]:
       grades.append(extractedGrade)
 
