@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 import json
 import csv
+from estimateGrade import getEstimatedGrade
 
 flex= ("XAT--12A-S", "XAT--12B-S")
 
@@ -51,6 +52,10 @@ def getSampleStudents(data_dir: str, log: bool = False) -> list[dict]:
           "studentIndex": len(mockStudents)
         }
         mockStudents.append(newStudent)
+
+  # Estimate student grades
+  for student in mockStudents:
+    student["gradelevel"] = getEstimatedGrade(student)
 
   if log:
     with open("./output/students.json", "w") as outfile:

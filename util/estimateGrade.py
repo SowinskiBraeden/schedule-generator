@@ -3,9 +3,9 @@ import json
 
 # Get students
 try:
-  with open("../output/students.json") as studentFile: students = json.load(studentFile)
+  with open("../output/students.json", 'r') as studentFile: students = json.load(studentFile)
 except FileNotFoundError:
-  with open("./output/students.json") as studentFile: students = json.load(studentFile)
+  with open("./output/students.json", 'r') as studentFile: students = json.load(studentFile)
 
 flex = ("XAT--12A-S", "XAT--12B-S")
 
@@ -24,3 +24,9 @@ if __name__ == '__main__':
   # Define students grade level
   for student in students:
     student["gradelevel"] = getEstimatedGrade(student)
+  try:
+    with open('../output/students.json', 'w') as studentFile:
+      json.dump(students, studentFile, indent=2)
+  except FileNotFoundError:
+    with open('./output/students/json', 'w') as studnetFile:
+      json.dump(students, studentFile, indent=2)
