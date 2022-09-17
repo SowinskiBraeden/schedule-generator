@@ -61,7 +61,7 @@ if __name__ == '__main__':
     if e.lower().replace('_', '') == 'showerror': showError = True
     if e.lower().replace('_', '') == 'noanim': noAnim = True
 
-  if len(sys.argv) == 1:
+  if len(sys.argv) in (1, 2) and sys.argv[1].lower() not in ('no_refresh', 'errors'):
     print()
 
     st = time() # Start time

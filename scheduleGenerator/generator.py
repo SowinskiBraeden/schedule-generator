@@ -7,6 +7,7 @@ from string import hexdigits
 # Import from custom utilities
 from util.mockStudents import getSampleStudents
 from util.generateCourses import getSampleCourses
+from util.estimateGrade import getGradeFromCourseCode
 
 # Import other utilites
 from util.debug import debug
@@ -52,7 +53,8 @@ def newConflict(pupilNum: str, email: str, conflictType: str, code: str, descrip
     "Email": email,
     "Type": conflictType,
     "Code": code,
-    "Conflict": description
+    "Conflict": description,
+    **({"Data": courseData} if courseData is not None else {})
   }
   if exists: logs[pupilNum].append(log)
   else: logs[pupilNum] = [log]
@@ -359,8 +361,11 @@ def generateScheduleV3(
   studentsCritical, studentsAcceptable = 0, 0
 
   for student in students:
+    # if student["Pupil #"] == "772554": debug("772554")
     blocks = [student["schedule"][block] for block in student["schedule"]]
+    # if student["Pupil #"] == "772554": debug(blocks)
     hasConflicts = True if sum(1 for b in blocks if len(b)>1) > 0 else False
+    # if student["Pupil #"] == "772554": debug(f'Has conflict? {hasConflicts}')
 
     # If there is no conflicts
     # and classes inserted to is equal to expectedClasses
@@ -369,6 +374,7 @@ def generateScheduleV3(
     # continue to next student
     if not hasConflicts and student["classes"] == student["expectedClasses"]: continue
     elif not hasConflicts and (student["expectedClasses"]-2) <= student["classes"] < student["expectedClasses"]:
+      # TODO: Insert alternates if available?
       a_mc_count += 1
       acceptableCount += 1
       if not newConflict(student["Pupil #"], "", "Acceptable", "A-MC", "Missing 1-2 Classses", conflictLogs): studentsAcceptable += 1
@@ -380,6 +386,10 @@ def generateScheduleV3(
     }
 
     if hasConflicts:
+      student["classes"] = 0
+      couldnt_resolve = False
+      missing = []
+      missingSolutions = []
       # Clear student schedule to restructure
       for block in student["schedule"]:
         [running[block][cname]["students"].remove(studentData) for cname in student["schedule"][block]]
@@ -406,6 +416,7 @@ def generateScheduleV3(
               running[block][cname]["students"].append(studentData)
               student["schedule"][block].append(cname)
               availableBlocks.remove(block)
+              student["classes"] += 1
               found = True
               break
 
@@ -429,6 +440,8 @@ def generateScheduleV3(
                 if block == existing or block not in availableBlocks: continue
                 for cname in running[block]:
                   if cname[:-2] == classOut[:-2] and len(running[block][cname]["students"]) < classCap:
+                    student["classes"] += 1
+
                     # Move to existing class elsewhere
                     student["schedule"][block].append(cname)
                     running[block][cname]["students"].append(studentData)
@@ -437,7 +450,7 @@ def generateScheduleV3(
                     running[existing][student["schedule"][existing][0]]["students"].remove(studentData)
                     student["schedule"][existing][0] = existingClassNames[i]
                     running[existing][existingClassNames[i]]["students"].append(studentData)
-                    
+
                     solution = True
                     break
 
@@ -447,7 +460,17 @@ def generateScheduleV3(
             if len(alternates) == 0: # If no alternates, create critical error
               c_cr_count += 1
               criticalCount += 1
-              if not newConflict(student["Pupil #"], "", "Critical", "C-CR", "Couldn't Resolve", conflictLogs): studentsCritical += 1
+
+              missing.append(classes[index])
+
+              if not newConflict(
+                student["Pupil #"],
+                "", # Student Email
+                "Critical", # Err type
+                "C-CR", # Err code
+                "Couldn't Resolve", # Err msg
+                conflictLogs): # logs dir
+                  studentsCritical += 1
 
             else:
               # Get alternate least run
@@ -466,6 +489,34 @@ def generateScheduleV3(
         # Remove class after inserted or failed to insert
         classes.remove(classes[index])
         runCounts.remove(runCounts[index])
+
+      # Collect missing course data and solutions
+
+      data = { "missing": [] }
+
+      if student["gradelevel"] is None:
+        for mCname in missing:
+          data["missing"].append({
+            "missing": mCname,
+            "solutions": None,
+            "error": "Unable to find solutions, err no grade" })
+
+      else:
+        for block in student["schedule"]:
+          print(student["schedule"][block])
+          if len(student["schedule"][block]) == 0:
+            blockSolution = { "block": block, "courseSolutions": [] }
+            for cname in running[block]:
+              courseGrade = getGradeFromCourseCode(cname[:-2])
+              if courseGrade is None: continue
+              if (student["gradelevel"] == courseGrade) or (student["gradelevel"] == 12 and courseGrade == 11):
+                if len(running[block][cname]["students"]) < classCap:
+                  blockSolution["courseSolutions"].append({
+                    "CrsNo": cname,
+                    "Description": running[block][cname]["Description"]
+                  })
+
+            data["solutions"].append(blockSolution)
 
     metSelfRequirements = True if student["classes"] == student["expectedClasses"] else False
     if not metSelfRequirements:

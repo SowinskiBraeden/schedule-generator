@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 import json
 import csv
-from estimateGrade import getEstimatedGrade
+from util.estimateGrade import getEstimatedGrade
 
 flex= ("XAT--12A-S", "XAT--12B-S")
 
