@@ -53,12 +53,18 @@ def newConflict(pupilNum: str, email: str, conflictType: str, code: str, descrip
     "Email": email,
     "Type": conflictType,
     "Code": code,
-    "Conflict": description,
-    **({"Data": courseData} if courseData is not None else {})
+    "Conflict": description
   }
   if exists: logs[pupilNum].append(log)
   else: logs[pupilNum] = [log]
   return exists if conflictType == "Critical" else False
+
+def insertConflictSolutions(pupilNum: str, logs: dict, data: dict) -> None:
+  log = logs[pupilNum]
+  for conflict in log:
+    if conflict["Type"] == "Critical":
+      conflict["Missing"] = data
+      break
 
 minReq, median, classCap = 18, 24, 30
 running = {
@@ -387,9 +393,7 @@ def generateScheduleV3(
 
     if hasConflicts:
       student["classes"] = 0
-      couldnt_resolve = False
       missing = []
-      missingSolutions = []
       # Clear student schedule to restructure
       for block in student["schedule"]:
         [running[block][cname]["students"].remove(studentData) for cname in student["schedule"][block]]
@@ -461,7 +465,10 @@ def generateScheduleV3(
               c_cr_count += 1
               criticalCount += 1
 
-              missing.append(classes[index])
+              missing.append({
+                "block": f'block{index + 1}',
+                "CrsNo": classes[index]
+              })
 
               if not newConflict(
                 student["Pupil #"],
@@ -492,31 +499,34 @@ def generateScheduleV3(
 
       # Collect missing course data and solutions
 
-      data = { "missing": [] }
+      if len(missing) > 0:
+        data = []
 
-      if student["gradelevel"] is None:
-        for mCname in missing:
-          data["missing"].append({
-            "missing": mCname,
-            "solutions": None,
-            "error": "Unable to find solutions, err no grade" })
+        if student["gradelevel"] is None:
+          for obj in missing:
+            data["missing"].append({
+              "CrsNo": obj["CrsNo"],
+              "block": obj['block'],
+              "solutions": None,
+              "error": "Unable to find solutions, err no grade"
+            })
 
-      else:
-        for block in student["schedule"]:
-          print(student["schedule"][block])
-          if len(student["schedule"][block]) == 0:
-            blockSolution = { "block": block, "courseSolutions": [] }
-            for cname in running[block]:
+        else:
+          for obj in missing:
+            blockSolution = { "CrsNo": obj["CrsNo"], "block": obj['block'], "solutions": [] }
+            for cname in running[obj['block']]:
               courseGrade = getGradeFromCourseCode(cname[:-2])
               if courseGrade is None: continue
               if (student["gradelevel"] == courseGrade) or (student["gradelevel"] == 12 and courseGrade == 11):
-                if len(running[block][cname]["students"]) < classCap:
-                  blockSolution["courseSolutions"].append({
+                if len(running[obj['block']][cname]["students"]) < classCap:
+                  blockSolution["solutions"].append({
                     "CrsNo": cname,
-                    "Description": running[block][cname]["Description"]
+                    "Description": running[obj['block']][cname]["Description"]
                   })
 
-            data["solutions"].append(blockSolution)
+            data.append(blockSolution)
+
+        insertConflictSolutions(student["Pupil #"], conflictLogs, data)
 
     metSelfRequirements = True if student["classes"] == student["expectedClasses"] else False
     if not metSelfRequirements:
