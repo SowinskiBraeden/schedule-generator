@@ -9,6 +9,7 @@ The algorithm has been moved out of `tinker.py` into its own python script. Vers
 Here is the list of commands.
 
 Note: to show a basic error table, include `show_error` in your command args.
+Note: to stop any animations for loading, us `noanim` at the end of your command args.
 
 1. Collect latest data from files and generate timetable
 ```
