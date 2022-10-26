@@ -1,11 +1,5 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3.11
 import json
-
-# Get students
-try:
-  with open("../output/students.json", 'r') as studentFile: students = json.load(studentFile)
-except FileNotFoundError:
-  with open("./output/students.json", 'r') as studentFile: students = json.load(studentFile)
 
 flex = ("XAT--12A-S", "XAT--12B-S")
 
@@ -23,7 +17,13 @@ def getEstimatedGrade(pupil: dict) -> int:
 
   return None if len(grades) == 0 else most_frequent(grades) # Final estimate of grade
 
-if __name__ == '__main__':
+def main():
+  # Get students
+  try:
+    with open("../output/students.json", 'r') as studentFile: students = json.load(studentFile)
+  except FileNotFoundError:
+    with open("./output/students.json", 'r') as studentFile: students = json.load(studentFile)
+
   # Define students grade level
   for student in students:
     student["gradelevel"] = getEstimatedGrade(student)
@@ -33,3 +33,6 @@ if __name__ == '__main__':
   except FileNotFoundError:
     with open('./output/students/json', 'w') as studnetFile:
       json.dump(students, studentFile, indent=2)
+
+if __name__ == '__main__':
+  main()

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3.113.11
 from os.path import exists as file_exists
 from prettytable import PrettyTable
 from typing import Tuple
@@ -53,15 +53,14 @@ def errorOutput(students) -> Tuple[PrettyTable, dict, dict]:
   
   return t, conflicts["Critical"], conflicts["Acceptable"]
 
-if __name__ == '__main__':
-  
+def main():  
   showError = False
   noAnim = False
   for e in sys.argv:
     if e.lower().replace('_', '') == 'showerror': showError = True
     if e.lower().replace('_', '') == 'noanim': noAnim = True
 
-  if len(sys.argv) in (1, 2) and sys.argv[1].lower() not in ('no_refresh', 'errors'):
+  if (len(sys.argv) > 1 and sys.argv[1] not in ('no_refresh', 'errors')) or len(sys.argv) == 1:
     print()
 
     st = time() # Start time
@@ -185,3 +184,5 @@ if __name__ == '__main__':
     print("Invalid argument")
     exit()
 
+if __name__ == '__main__':
+  main()

@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3.11
 import json
 import csv
 from util.estimateGrade import getEstimatedGrade
@@ -63,11 +63,13 @@ def getSampleStudents(data_dir: str, log: bool = False) -> list[dict]:
 
   return mockStudents
 
-
-if __name__ == '__main__':
+def main():
   studentRequests: list[dict] = getSampleStudents("../sample_data/course_selection_data.csv")
 
   with open("../output/students.json", "w") as outfile:
     json.dump(studentRequests, outfile, indent=2)
 
   print("done")
+
+if __name__ == '__main__':
+  main()

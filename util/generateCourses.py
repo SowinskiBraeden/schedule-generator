@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3.11
 import json
 import csv
 
@@ -28,9 +28,11 @@ def getSampleCourses(data_dir, log=False) -> dict:
         
   return realCourses
 
-
-if __name__ == '__main__':
+def main():
   courseSet: dict = getSampleCourses("../sample_data/course_selection_data.csv")
 
   with open("../output/courses.json", "w") as outfile:
     json.dump(courseSet, outfile, indent=2)
+
+if __name__ == '__main__':
+  main()

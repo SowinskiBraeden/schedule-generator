@@ -1,4 +1,4 @@
-#!/usr/bin/env python
+#!/usr/bin/env python3.11
 import json
 import random
 from inspect import currentframe
@@ -589,7 +589,7 @@ def generateScheduleV3(
   
   return running
 
-if __name__ == '__main__':
+def main():
   print("Processing...")
 
   sampleStudents = getSampleStudents(True)
@@ -602,3 +602,6 @@ if __name__ == '__main__':
     json.dump(timetable, outfile, indent=2)
 
   print("Done")
+
+if __name__ == '__main__':
+  main()
