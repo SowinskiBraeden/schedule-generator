@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.113.11
+#!/usr/bin/env python3.11
 from os.path import exists as file_exists
 from prettytable import PrettyTable
 from typing import Tuple
@@ -20,12 +20,12 @@ from scheduleGenerator.generator import generateScheduleV3
 
 done = False
 
-# consts
-blockClassLimit = 40
+# constants
+TOTAL_BLOCKS = 10 # this can also be 8 for 4 blocks per semester
+BLOCK_CLASS_LIMIT = 40 # this is number of classrooms available per block
+MIN_REQ = 18 # this is minumum number of requests to allow a course to run
+CLASS_CAP = 30 # this is the max number of students per class
 
-# print()
-# debug(f'Current blockClassLimit = {blockClassLimit}')
-  
 def processing(msg: str):
   for c in itertools.cycle(['|', '/', '-', '\\']):
     if done: break
@@ -66,15 +66,26 @@ def main():
     st = time() # Start time
     
     if noAnim:
-      sampleStudents = getSampleStudents("./sample_data/course_selection_data.csv", True)
-      sampleCourses = getSampleCourses("./sample_data/course_selection_data.csv", True)
+      sampleStudents = getSampleStudents("./sample_data/course_selection_data.csv", log=True, totalBlocks=TOTAL_BLOCKS)
+      sampleCourses = getSampleCourses("./sample_data/course_selection_data.csv", log=True)
       timetable = {}
       timetable["Version"] = 3
-      timetable["timetable"] = generateScheduleV3(sampleStudents, sampleCourses, blockClassLimit, "./output/students.json", "./output/conflicts.json")
+      timetable["timetable"], err = generateScheduleV3(
+        sampleStudents,
+        sampleCourses,
+        minReq=MIN_REQ,
+        blockClassLimit=BLOCK_CLASS_LIMIT,
+        classCap=CLASS_CAP,
+        totalBlocks=TOTAL_BLOCKS,
+        studentsDir="./output/students.json",
+        conflictsDir="./output/conflicts.json")
+    
+      if err is not None: raise SystemExit(f'{err.Title} : {err.Description}')
+
     else:
       t = threading.Thread(target=processing, args=('Collection student requests',))
       t.start() # Start animation
-      sampleStudents = getSampleStudents("./sample_data/course_selection_data.csv", True)
+      sampleStudents = getSampleStudents("./sample_data/course_selection_data.csv", log=True, totalBlocks=TOTAL_BLOCKS)
       done = True # End Animation
       print('\nStudent list generated.\n')
 
@@ -82,7 +93,7 @@ def main():
       t = threading.Thread(target=processing, args=('Collection Course Information',))
       done = False # reset animation
       t.start() # Start animation
-      sampleCourses = getSampleCourses("./sample_data/course_selection_data.csv", True)
+      sampleCourses = getSampleCourses("./sample_data/course_selection_data.csv", log=True)
       done = True # End Animation
       print('\nCourse Information Collected.\n')
       
@@ -92,9 +103,18 @@ def main():
       t.start() # Start animation
       timetable = {}
       timetable["Version"] = 3
-      timetable["timetable"] = generateScheduleV3(sampleStudents, sampleCourses, blockClassLimit, "./output/students.json", "./output/conflicts.json")
-
+      timetable["timetable"], err = generateScheduleV3(
+        sampleStudents,
+        sampleCourses,
+        minReq=MIN_REQ,
+        blockClassLimit=BLOCK_CLASS_LIMIT,
+        classCap=CLASS_CAP,
+        totalBlocks=TOTAL_BLOCKS,
+        studentsDir="./output/students.json",
+        conflictsDir="./output/conflicts.json")
+    
       done = True # End Animation
+      if err is not None: raise SystemExit(f'{err.Title} : {err.Description}')
     
     et = time() # End time
     elapsed_time = round((et - st), 3) # Execution time
@@ -127,15 +147,36 @@ def main():
     if noAnim:
       timetable = {}
       timetable["Version"] = 3
-      timetable["timetable"] = generateScheduleV3(sampleStudents, sampleCourses, blockClassLimit, "./output/students.json", "./output/conflicts.json")
-    else :
+      timetable["timetable"], err = generateScheduleV3(
+        sampleStudents,
+        sampleCourses,
+        minReq=MIN_REQ,
+        blockClassLimit=BLOCK_CLASS_LIMIT,
+        classCap=CLASS_CAP,
+        totalBlocks=TOTAL_BLOCKS,
+        studentsDir="./output/students.json",
+        conflictsDir="./output/conflicts.json")
+
+      if err is not None: raise SystemExit(f'{err.Title} : {err.Description}')
+    
+    else:
       t = threading.Thread(target=processing, args=('Processing',))
       t.start() # Start animation
       timetable = {}
       timetable["Version"] = 3
-      timetable["timetable"] = generateScheduleV3(sampleStudents, sampleCourses, blockClassLimit, "./output/students.json", "./output/conflicts.json")
-      done = True # End Animation
+      timetable["timetable"], err = generateScheduleV3(
+        sampleStudents,
+        sampleCourses,
+        minReq=MIN_REQ,
+        blockClassLimit=BLOCK_CLASS_LIMIT,
+        classCap=CLASS_CAP,
+        totalBlocks=TOTAL_BLOCKS,
+        studentsDir="./output/students.json",
+        conflictsDir="./output/conflicts.json")
     
+      done = True # End Animation
+      if err is not None: raise SystemExit(f'{err.Title} : {err.Description}')
+
     et = time() # End time
     elapsed_time = round((et - st), 3) # Execution time
     print(f'\n\nDone - Finished in {elapsed_time} seconds\n')

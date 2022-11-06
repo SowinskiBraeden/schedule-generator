@@ -3,6 +3,7 @@ import json
 import random
 from inspect import currentframe
 from string import hexdigits
+from dataclasses import dataclass
 
 # Import from custom utilities
 from util.mockStudents import getSampleStudents
@@ -44,6 +45,15 @@ from util.debug import debug
 exists = lambda n : True if n not in ('', None) else False
 getLineNumber = lambda : currentframe().f_back.f_lineno
 
+@dataclass
+class Error:
+  Title: str
+  Description: str
+
+  def __init__(self, title: str, description: str):
+    self.Title = title
+    self.Description = description
+
 # Takes in information to create or add a new conflict
 # Returns if the particular student has a previous error
 def newConflict(pupilNum: str, email: str, conflictType: str, code: str, description: str, logs: dict) -> bool:
@@ -66,20 +76,6 @@ def insertConflictSolutions(pupilNum: str, logs: dict, data: dict) -> None:
       conflict["Missing"] = data
       break
 
-minReq, median, classCap = 18, 24, 30
-running = {
-  "block1": {},
-  "block2": {},
-  "block3": {},
-  "block4": {},
-  "block5": {},
-  "block6": {},
-  "block7": {},
-  "block8": {},
-  "block9": {},
-  "block10": {}
-}
-
 # These are the codes for Flex (spare) blocks
 # Semester 1 and 2
 flex = ("XAT--12A-S", "XAT--12B-S")
@@ -90,13 +86,28 @@ flex = ("XAT--12A-S", "XAT--12B-S")
 # Then it starts to attempt to fit all classes into a timetable, making corretions along
 # the way. Corrections being moving a students class
 def generateScheduleV3(
-  students: list, # Refer to ../util/mockStudents.py to see the students list structure
-  courses: dict, # Reger to ../util/generateCourses.py to see the courses dictionary structure
+  students: list, # Refer to /util/mockStudents.py to see the students list structure
+  courses: dict, # Reger to /util/generateCourses.py to see the courses dictionary structure
+  minReq: int=18, # minimum requests for a class to run
+  classCap: int=30, # maximum students per class
   blockClassLimit: int=40, # Block class limit is the number of classrooms available per block. Default 40 classes per block
+  totalBlocks: int=10, # total blocks between two semesters -> default is 10 for 5 per semester... or this can be 8 for 4 blocks per semester
   studentsDir: str="../output/students.json",
   conflictsDir: str="../output/conflicts.json"
-  ) -> dict[str, dict]: # Returns the completed 'running' dictionary from above
+  ) -> tuple[dict, Error]: # Returns the completed 'running' dictionary from above
   
+  # Return error that totalBlocks is invalid
+  if totalBlocks not in (10, 8):
+    totalBlockError = Error('Invalid totalBlocks', 'An invalid \'totalBlocks\' value was provided -> must be 10 or 8')
+    return (None, totalBlockError) # return none an signal failure
+
+  # First we need to setup some values
+  median = (minReq + classCap) // 2
+  blockPerSem = int(totalBlocks / 2)
+  running = {}
+  for i in range(1, totalBlocks + 1):
+    running[f'block{i}'] = {}
+
 
   def equal(l: list) -> list: # Used to equalize list of numbers
     q,r = divmod(sum(l),len(l))
@@ -276,14 +287,19 @@ def generateScheduleV3(
 
   # Step 4 - Attempt to fit classes into timetable
   def stepIndex(offset: int, stepType: int) -> int:
+    # ALl this logic handles taking the # of blocks per semester, 4 or 5 and calculating
+    # the number used to step between the index of the first or second semester
+
     # stepType 0 is for stepping between first and second semester
-    if stepType == 0: return 5 if offset in (0, -4) else -4
+    if stepType == 0: return blockPerSem if offset in (0, (-1 * (blockPerSem - 1))) else (-1 * (blockPerSem - 1))
     
     # stepType 1 is for stepping between second and first semester
-    elif stepType == 1: return -5 if offset in (0, 6) else 6
+    elif stepType == 1: return (-1 * blockPerSem) if offset in (0, (blockPerSem + 1)) else (blockPerSem + 1)
 
     # Return Error if code is altered to cause error
-    else: raise SystemExit(f"Invalid 'stepType' in func 'stepIndex' line {getLineNumber()}")
+    else:
+      invalidStepTypeError = Error('Invalid stepType', 'An invalid \'stepType\' was passed to func \'stepIndex\'')
+      return (None, invalidStepTypeError)
 
   # Create copy for step 6
   courseRunInfoCopy = dict(courseRunInfo)
@@ -294,15 +310,12 @@ def generateScheduleV3(
     course = list(courseRunInfo)[index]
 
     # Tally first and second semester
-    sem1 = sum(len(running[f'block{i}']) for i in range(1, 6))
-    sem2 = sum(len(running[f'block{i}']) for i in range(6, 11))
-    allSemBlockLens = [len(running[f'block{i}']) for i in range(1, 11)]
+    allSemBlockLens = [len(running[f'block{i}']) for i in range(1, totalBlocks + 1)]
   
     # If there is more than one class Running
     if allClassRunCounts[index] > 1:
       blockIndex = allSemBlockLens.index(min(allSemBlockLens))
-      startSem = 1 if blockIndex < 5 else 2
-      stepType = 0 if blockIndex < 5 else 1
+      stepType = 0 if blockIndex < blockPerSem else 1
       offset = 0
 
       # Spread classes throughout both semesters
@@ -310,7 +323,6 @@ def generateScheduleV3(
         cname = f"{course}-{hexdigits[i]}"
         classInserted = False
         while not classInserted:
-
           blockIndex += offset
           if len(running[f'block{blockIndex+1}']) < blockClassLimit:
             running[list(running)[blockIndex]][cname] = {
@@ -323,8 +335,8 @@ def generateScheduleV3(
 
           offset = stepIndex(offset, stepType)
 
-          if blockIndex >= 9:
-            blockIndex = 0 if stepType == 0 else 5
+          if blockIndex >= (totalBlocks - 1):
+            blockIndex = 0 if stepType == 0 else blockPerSem
             offset = 0
 
     # If the class only runs once, place in semester with least classes
@@ -348,10 +360,6 @@ def generateScheduleV3(
       allClassRunCounts.remove(allClassRunCounts[index])
       courseRunInfo.pop(list(courseRunInfo)[index])
 
-  # # Debug step 4 output
-  # for i in range(1, 6):
-  #   debug(f'block{i} - {len(running[f"block{i}"])}  |  block{i+5} - {len(running[f"block{i+5}"])}')
-
   # Step 5 - Fill student schedule
   for block in running:
     for cname in running[block]:
@@ -367,12 +375,9 @@ def generateScheduleV3(
   studentsCritical, studentsAcceptable = 0, 0
 
   for student in students:
-    # if student["Pupil #"] == "772554": debug("772554")
     blocks = [student["schedule"][block] for block in student["schedule"]]
-    # if student["Pupil #"] == "772554": debug(blocks)
     hasConflicts = True if sum(1 for b in blocks if len(b)>1) > 0 else False
-    # if student["Pupil #"] == "772554": debug(f'Has conflict? {hasConflicts}')
-
+    
     # If there is no conflicts
     # and classes inserted to is equal to expectedClasses
     # or classes the student is inserted to is missing
@@ -407,7 +412,7 @@ def generateScheduleV3(
           runCounts.append(courseRunInfoCopy[cname[:-2]]["Total"])
 
       # Rebuild student schedule
-      availableBlocks = [f'block{i}' for i in range(1, 11)]
+      availableBlocks = [f'block{i}' for i in range(1, totalBlocks + 1)]
       while len(classes) > 0:
         index = runCounts.index(min(runCounts)) # Get class least run
         found = False
@@ -583,11 +588,12 @@ def generateScheduleV3(
       if len(student["schedule"][block]) == 0:
         student["schedule"][block].append(flex[0]) if int(block[5:]) <= 5 else student["schedule"][block].append(flex[1])
 
-  # Update Student records
+  # Update/log Student records
   with open(studentsDir, "w") as outfile:
     json.dump(students, outfile, indent=2)
   
-  return running
+  return (running, None)
+
 
 def main():
   print("Processing...")
@@ -596,7 +602,9 @@ def main():
   samplemockCourses = getSampleCourses(True) 
   timetable = {}
   timetable["Version"] = 3
-  timetable["timetable"] = generateScheduleV3(sampleStudents, samplemockCourses)
+  timetable["timetable"], err = generateScheduleV3(sampleStudents, samplemockCourses)
+
+  if err is not None: raise SystemExit(f'{err.Title} : {err.Description}')
 
   with open("../output/timetable.json", "w") as outfile:
     json.dump(timetable, outfile, indent=2)

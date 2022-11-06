@@ -8,7 +8,7 @@ flex= ("XAT--12A-S", "XAT--12B-S")
 mockStudents: list[dict] = []
 
 # sort real sample data into usable dictionary
-def getSampleStudents(data_dir: str, log: bool = False) -> list[dict]:
+def getSampleStudents(data_dir: str, log: bool = False, totalBlocks: int = 10) -> list[dict]:
   with open(data_dir, newline='') as csvfile:
     reader = csv.DictReader(csvfile)
     for row in reader:
@@ -18,7 +18,7 @@ def getSampleStudents(data_dir: str, log: bool = False) -> list[dict]:
         if exists: break
       alternate = True if row["Alternate?"] == 'TRUE' else False
       if exists:
-        if len(mockStudents[student["studentIndex"]]["requests"]) >= 10 and not alternate and row["CrsNo"] not in flex: alternate = True
+        if len(mockStudents[student["studentIndex"]]["requests"]) >= totalBlocks and not alternate and row["CrsNo"] not in flex: alternate = True
         mockStudents[student["studentIndex"]]["requests"].append({
           "CrsNo": row["CrsNo"],
           "Description": row["Description"],
@@ -34,23 +34,13 @@ def getSampleStudents(data_dir: str, log: bool = False) -> list[dict]:
             "Description": row["Description"],
             "alt": alternate
           }],
-          "schedule": {
-            "block1": [],
-            "block2": [],
-            "block3": [],
-            "block4": [],
-            "block5": [],
-            "block6": [],
-            "block7": [],
-            "block8": [],
-            "block9": [],
-            "block10": []
-          },
+          "schedule": {},
           "expectedClasses": 1,
           "classes": 0,
           "remainingAlts": [],
           "studentIndex": len(mockStudents)
         }
+        for i in range(1, totalBlocks+1): newStudent["schedule"][f'block{i}'] = []
         mockStudents.append(newStudent)
 
   # Estimate student grades
