@@ -8,9 +8,8 @@ import json
 flex = ("XAT--12A-S", "XAT--12B-S")
 	
 def putMasterTimetable(table: dict, output_dir: str='./output/final') -> None:
-	# worksheet.write(row, col, val)
 
-	workbook = xlsxwriter.Workbook('master_timetable.xlsx')
+	workbook = xlsxwriter.Workbook(f'{output_dir}/master_timetable.xlsx')
 	worksheet = workbook.add_worksheet()
 
 	sem1Header = workbook.add_format({'bold': True, 'align': 'center', 'bg_color': '#91c5fa', 'border': 1})
