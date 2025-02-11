@@ -148,10 +148,12 @@ def generateScheduleV3(
     # If remaining fit in open slots in existing classes
     if remaining <= classRunCount * (classCap - median):
       # Equally disperse remaining into existing classes
-      for j in range(classRunCount):
-        if remaining == 0: break
-        emptyClasses[index][f"{index}-{hexdigits[j]}"]["expectedLen"] += 1
-        remaining -= 1
+      while remaining > 0:
+        for j in range(classRunCount):
+          if remaining == 0: break
+          emptyClasses[index][f"{index}-{hexdigits[j]}"]["expectedLen"] += 1
+          remaining -= 1
+      if remaining > 0: print("step 2 logic error", remaining, "remaining")
 
     # If we can create a class using remaining, create class
     elif remaining >= minReq:

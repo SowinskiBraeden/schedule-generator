@@ -1,4 +1,4 @@
-#!/usr/bin/env python3.11
+#!/usr/bin/env python3
 from os.path import exists as file_exists
 from prettytable import PrettyTable
 from typing import Tuple
